@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    IMAGE = "devops-web:latest"
+    IMAGE = "stefanobam/devops-web:latest"
     CONTAINER = "devops-web"
     PORT = "8082"
   }
