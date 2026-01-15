@@ -1,44 +1,52 @@
 pipeline {
-    agent any
+  agent any
 
-    environment {
-        IMAGE_NAME = "devops-web"
-        IMAGE_TAG  = "latest"
+  environment {
+    IMAGE = "devops-web:latest"
+    CONTAINER = "devops-web"
+    PORT = "8082"
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout([$class: 'GitSCM',
+          branches: [[name: '*/main']],
+          userRemoteConfigs: [[url: 'https://github.com/StefanoCva/devops-docker-jenkins.git']]
+        ])
+      }
     }
 
-    stages {
-
-        stage('Checkout') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/StefanoCva/devops-docker-jenkins.git'
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                sh '''
-                docker build -t $IMAGE_NAME:$IMAGE_TAG .
-                '''
-            }
-        }
-
-        stage('Run Container') {
-            steps {
-                sh '''
-                docker rm -f devops-web || true
-                docker run -d -p 8082:80 --name devops-web $IMAGE_NAME:$IMAGE_TAG
-                '''
-            }
-        }
+    stage('Build Image') {
+      steps {
+        sh 'docker build -t $IMAGE .'
+      }
     }
 
-    post {
-        success {
-            echo '✅ Pipeline ejecutado correctamente'
-        }
-        failure {
-            echo '❌ Fallo en el pipeline'
-        }
+    stage('Deploy (Run Container)') {
+      steps {
+        sh '''
+          docker rm -f $CONTAINER || true
+          docker run -d --name $CONTAINER -p ${PORT}:80 $IMAGE
+          docker ps --filter "name=$CONTAINER"
+        '''
+      }
     }
+
+    stage('Smoke Test') {
+      steps {
+        sh '''
+          echo "Probando que responda HTTP..."
+          curl -I --max-time 10 http://localhost:${PORT} | head -n 1
+        '''
+      }
+    }
+  }
+
+  post {
+    always {
+      echo "Pipeline finalizado."
+    }
+  }
 }
+
