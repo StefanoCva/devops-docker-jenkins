@@ -5,9 +5,11 @@ pipeline {
     IMAGE = "stefanobam/devops-web:latest"
     CONTAINER = "devops-web"
     PORT = "8082"
+    DOCKERHUB = credentials('dockerhub-creds')
   }
 
   stages {
+
     stage('Checkout') {
       steps {
         checkout([$class: 'GitSCM',
@@ -23,29 +25,27 @@ pipeline {
       }
     }
 
-    stage('Deploy (Run Container)') {
+    stage('DockerHub Login') {
       steps {
         sh '''
-          docker rm -f $CONTAINER || true
-          docker run -d --name $CONTAINER -p ${PORT}:80 $IMAGE
-          docker ps --filter "name=$CONTAINER"
+          echo "$DOCKERHUB_PSW" | docker login -u "$DOCKERHUB_USR" --password-stdin
         '''
       }
     }
 
-    stage('Smoke Test') {
+    stage('Push Image') {
       steps {
-        sh '''
-          echo "Probando que responda HTTP..."
-          curl -I --max-time 10 http://localhost:${PORT} | head -n 1
-        '''
+        sh 'docker push $IMAGE'
       }
     }
   }
 
   post {
-    always {
-      echo "Pipeline finalizado."
+    success {
+      echo "✅ Imagen subida a Docker Hub: $IMAGE"
+    }
+    failure {
+      echo "❌ Falló el pipeline"
     }
   }
 }
