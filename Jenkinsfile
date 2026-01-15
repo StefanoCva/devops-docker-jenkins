@@ -18,7 +18,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                sudo docker build -t $IMAGE_NAME:$IMAGE_TAG .
+                docker build -t $IMAGE_NAME:$IMAGE_TAG .
                 '''
             }
         }
@@ -26,8 +26,8 @@ pipeline {
         stage('Run Container') {
             steps {
                 sh '''
-                sudo docker rm -f devops-web || true
-                sudo docker run -d -p 8082:80 --name devops-web $IMAGE_NAME:$IMAGE_TAG
+                docker rm -f devops-web || true
+                docker run -d -p 8082:80 --name devops-web $IMAGE_NAME:$IMAGE_TAG
                 '''
             }
         }
