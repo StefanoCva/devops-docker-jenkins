@@ -39,7 +39,17 @@ pipeline {
       }
     }
   }
-
+    stage('Run Container') {
+      steps {
+        sh '''
+          docker rm -f $CONTAINER || true
+            docker run -d \
+              --name $CONTAINER \
+              -p $PORT:80 \
+              $IMAGE
+      '''
+  }
+}
   post {
     success {
       echo "✅ Imagen subida a Docker Hub: $IMAGE"
